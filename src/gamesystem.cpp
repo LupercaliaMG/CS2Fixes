@@ -28,6 +28,7 @@
 #include "entities.h"
 #include "tier0/vprof.h"
 #include "idlemanager.h"
+#include "saysound.h"
 
 #include "tier0/memdbgon.h"
 
@@ -81,6 +82,7 @@ GS_EVENT_MEMBER(CGameSystem, BuildGameSessionManifest)
 	ZR_Precache(pResourceManifest);
 	PrecacheBeaconParticle(pResourceManifest);
 	Leader_Precache(pResourceManifest);
+	SaySound_Precache(pResourceManifest);
 
 	pResourceManifest->AddResource(g_sBurnParticle.c_str());
 }

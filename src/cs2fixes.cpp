@@ -59,6 +59,7 @@
 #include "cs_gameevents.pb.h"
 #include "gameevents.pb.h"
 #include "leader.h"
+#include "saysound.h"
 
 #include "tier0/memdbgon.h"
 
@@ -459,6 +460,9 @@ void CS2Fixes::Hook_DispatchConCommand(ConCommandHandle cmdHandle, const CComman
 			}
 		}
 
+		if (pController && SaySound_OnChat(pController, args.Arg(1)))
+			bGagged = true;
+		
 		if (!bGagged && !bSilent && !bFlooding)
 		{
 			SH_CALL(g_pCVar, &ICvar::DispatchConCommand)(cmdHandle, ctx, args);
@@ -532,6 +536,8 @@ void CS2Fixes::Hook_StartupServer(const GameSessionConfiguration_t& config, ISou
 	VoteManager_Init();
 
 	g_pIdleSystem->Reset();
+
+	SaySound_Init();
 }
 
 class CGamePlayerEquip;
