@@ -1,5 +1,6 @@
 #pragma once
 
+class IEntityResourceManifest;
 class CCSPlayerController;
 
 void SaySound_Init();

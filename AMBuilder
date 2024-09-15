@@ -80,6 +80,7 @@ for sdk_target in MMSPlugin.sdk_targets:
     'src/leader.cpp',
     'src/idlemanager.cpp',
     'src/saysound.cpp',
+    'src/rocket.cpp',
     'sdk/entity2/entitysystem.cpp',
     'sdk/entity2/entityidentity.cpp',
     'sdk/entity2/entitykeyvalues.cpp',

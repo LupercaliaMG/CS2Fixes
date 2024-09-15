@@ -42,6 +42,7 @@
 #include "igameevents.h"
 #include "gameconfig.h"
 #include "zombiereborn.h"
+#include "rocket.h"
 #include "customio.h"
 #include "entities.h"
 #include "serversideclient.h"
@@ -102,6 +103,9 @@ void FASTCALL Detour_CBaseEntity_TakeDamageOld(CBaseEntity *pThis, CTakeDamageIn
 	
 	// Block all player damage if desired
 	if (g_bBlockAllDamage && pThis->IsPawn())
+		return;
+
+	if (!Rocket_Detour_OnTakeDamageOld(pThis, inputInfo))
 		return;
 
 	CBaseEntity *pInflictor = inputInfo->m_hInflictor.Get();

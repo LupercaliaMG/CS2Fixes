@@ -121,6 +121,7 @@ public:
 		m_flMaxSpeed = 1.f;
 		m_iLastInputs = IN_NONE;
 		m_iLastInputTime = std::time(0);
+		m_bInRocket = false;
 	}
 
 	~ZEPlayer()
@@ -176,6 +177,8 @@ public:
 	void UpdateLastInputTime() { m_iLastInputTime = std::time(0); }
 	void SetMaxSpeed(float flMaxSpeed) { m_flMaxSpeed = flMaxSpeed; }
 	void ReplicateConVar(const char* pszName, const char* pszValue);
+	void SetInRocket(bool bInRocket) { m_bInRocket = bInRocket; }
+	void SetRocketFallDamageIgnore(bool bIgnore) { m_bRocketFallDamageIgnore = bIgnore; }
 
 	bool IsMuted() { return m_bMuted; }
 	bool IsGagged() { return m_bGagged; }
@@ -209,6 +212,8 @@ public:
 	float GetMaxSpeed() { return m_flMaxSpeed; }
 	uint64 GetLastInputs() { return m_iLastInputs; }
 	std::time_t GetLastInputTime() { return m_iLastInputTime; }
+	bool IsInRocket() { return m_bInRocket; }
+	bool IsRocketFallDamageIgnore() { return m_bRocketFallDamageIgnore; }
 	
 	void OnSpawn();
 	void OnAuthenticated();
@@ -262,6 +267,8 @@ private:
 	float m_flMaxSpeed;
 	uint64 m_iLastInputs;
 	std::time_t m_iLastInputTime;
+	bool m_bInRocket;
+	bool m_bRocketFallDamageIgnore;
 };
 
 class CPlayerManager
