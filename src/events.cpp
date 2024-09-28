@@ -31,6 +31,7 @@
 #include "recipientfilters.h"
 #include "panoramavote.h"
 #include "rocket.h"
+#include "skinchooser.h"
 
 #include "tier0/memdbgon.h"
 
@@ -132,6 +133,8 @@ GAME_EVENT_F(player_spawn)
 	// always reset when player spawns
 	if (pPlayer)
 		pPlayer->SetMaxSpeed(1.f);
+
+	SkinChooser_OnPlayerSpawn(pController);
 
 	if (g_bEnableZR)
 		ZR_OnPlayerSpawn(pController);

@@ -24,6 +24,7 @@
 #include "commands.h"
 #include "map_votes.h"
 #include "user_preferences.h"
+#include "database.h"
 #include "panoramavote.h"
 #include "entity/ccsplayercontroller.h"
 #include "utils/entity.h"
@@ -106,6 +107,8 @@ void ZEPlayer::OnAuthenticated()
 	CheckAdmin();
 	CheckInfractions();
 	g_pUserPreferencesSystem->PullPreferences(GetPlayerSlot().Get());
+
+	Database_OnPlayerAuthenticated(this);
 }
 
 void ZEPlayer::CheckInfractions()
@@ -552,6 +555,8 @@ bool CPlayerManager::OnClientConnected(CPlayerSlot slot, uint64 xuid, const char
 void CPlayerManager::OnClientDisconnect(CPlayerSlot slot)
 {
 	Message("%d disconnected\n", slot.Get());
+
+	Database_SavePlayer(slot.Get());
 
 	g_pUserPreferencesSystem->PushPreferences(slot.Get());
 	g_pUserPreferencesSystem->ClearPreferences(slot.Get());

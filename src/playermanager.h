@@ -122,6 +122,9 @@ public:
 		m_iLastInputs = IN_NONE;
 		m_iLastInputTime = std::time(0);
 		m_bInRocket = false;
+		m_strSkinPreference = "";
+		m_bSaySoundEnable = true;
+		m_bDBLoaded = false;
 	}
 
 	~ZEPlayer()
@@ -141,6 +144,8 @@ public:
 	const CSteamID* GetSteamId() { return m_SteamID; }
 	bool IsAdminFlagSet(uint64 iFlag);
 	bool IsFlooding();
+	bool IsSaySoundEnable() { return m_bSaySoundEnable; }
+	bool IsDBLoaded() { return m_bDBLoaded; }
 	
 	void SetConnected() { m_bConnected = true; }
 	void SetUnauthenticatedSteamId(const CSteamID* steamID) { m_UnauthenticatedSteamID = steamID; }
@@ -179,6 +184,9 @@ public:
 	void ReplicateConVar(const char* pszName, const char* pszValue);
 	void SetInRocket(bool bInRocket) { m_bInRocket = bInRocket; }
 	void SetRocketFallDamageIgnore(bool bIgnore) { m_bRocketFallDamageIgnore = bIgnore; }
+	void SetSkinPreference(std::string strSkinPreference) { m_strSkinPreference = strSkinPreference; }
+	void SetSaysoundEnable(bool bSaySoundEnable) { m_bSaySoundEnable = bSaySoundEnable; }
+	void SetDBLoaded(bool bLoaded) { m_bDBLoaded = bLoaded; }
 
 	bool IsMuted() { return m_bMuted; }
 	bool IsGagged() { return m_bGagged; }
@@ -214,6 +222,7 @@ public:
 	std::time_t GetLastInputTime() { return m_iLastInputTime; }
 	bool IsInRocket() { return m_bInRocket; }
 	bool IsRocketFallDamageIgnore() { return m_bRocketFallDamageIgnore; }
+	const char* GetSkinPreference() { return m_strSkinPreference.c_str(); }
 	
 	void OnSpawn();
 	void OnAuthenticated();
@@ -269,6 +278,9 @@ private:
 	std::time_t m_iLastInputTime;
 	bool m_bInRocket;
 	bool m_bRocketFallDamageIgnore;
+	std::string m_strSkinPreference;
+	bool m_bSaySoundEnable;
+	bool m_bDBLoaded;
 };
 
 class CPlayerManager

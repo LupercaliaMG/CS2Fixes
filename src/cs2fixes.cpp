@@ -60,6 +60,8 @@
 #include "gameevents.pb.h"
 #include "leader.h"
 #include "saysound.h"
+#include "skinchooser.h"
+#include "database.h"
 
 #include "tier0/memdbgon.h"
 
@@ -460,8 +462,23 @@ void CS2Fixes::Hook_DispatchConCommand(ConCommandHandle cmdHandle, const CComman
 			}
 		}
 
-		if (pController && SaySound_OnChat(pController, args.Arg(1)))
-			bGagged = true;
+		if (pController && !bGagged && !bFlooding)
+		{
+			char pszMessage[128];
+			V_strncpy(pszMessage, (char*)args.ArgS(), sizeof(pszMessage));
+
+			int iStart = 0;
+			if (pszMessage[0] == '"' || pszMessage[0] == '!' || pszMessage[0] == '/') {
+				iStart += 1;
+			}
+
+			if (pszMessage[V_strlen(pszMessage) - 1] == '"') {
+				pszMessage[V_strlen(pszMessage) - 1] = '\0';
+			}
+
+			if (SaySound_OnChat(pController, &pszMessage[iStart]))
+				bGagged = true;
+		}
 		
 		if (!bGagged && !bSilent && !bFlooding)
 		{
@@ -538,6 +555,7 @@ void CS2Fixes::Hook_StartupServer(const GameSessionConfiguration_t& config, ISou
 	g_pIdleSystem->Reset();
 
 	SaySound_Init();
+	SkinChooser_Init();
 }
 
 class CGamePlayerEquip;
@@ -627,6 +645,8 @@ void CS2Fixes::AllPluginsLoaded()
 	 */
 
 	Message( "AllPluginsLoaded\n" );
+
+	Database_Setup();
 }
 
 CUtlVector<CServerSideClient *> *GetClientList()

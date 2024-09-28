@@ -15,16 +15,16 @@
 #define ROCKET_STEAMPARTICLE "particles/burning_fx/gas_cannister_trail_smoke.vpcf"
 #define ROCKET_EXPLODEPARTICLE "particles/explosions_fx/explosion_basic.vpcf"
 
-bool g_bRocketMeEnabled = false;
+bool g_bRocketMeEnabled = true;
 float g_flRocketExplodeTime = 3.0f;
 float g_flRocketGravity = 0.1f;
-int g_iRocketExplodeProbability = 50;
+int g_iRocketExplodeProbability = 5;
 float g_flRocketExemptTime = 4.0f;
-FAKE_BOOL_CVAR(lp_rocketme_enabled, "Allow players to suicide as a rocket", g_bRocketMeEnabled, false, false)
-FAKE_FLOAT_CVAR(lp_rocket_explode_time, "How long to detonate in seconds after launch", g_flRocketExplodeTime, 3.0f, false)
-FAKE_FLOAT_CVAR(lp_rocket_gravity, "How long to detonate in seconds after launch", g_flRocketGravity, 0.1f, false)
-FAKE_INT_CVAR(lp_rocket_explode_probability, "The probability of detonate chance", g_iRocketExplodeProbability, 50, false)
-FAKE_FLOAT_CVAR(lp_rocket_exempt_time, "How long to detonate in seconds after launch", g_flRocketExemptTime, 4.0f, false)
+FAKE_BOOL_CVAR(cs2f_rocketme_enabled, "Allow players to suicide as a rocket", g_bRocketMeEnabled, true, false)
+FAKE_FLOAT_CVAR(cs2f_rocket_explode_time, "How long to detonate in seconds after launch", g_flRocketExplodeTime, 3.0f, false)
+FAKE_FLOAT_CVAR(cs2f_rocket_gravity, "How long to detonate in seconds after launch", g_flRocketGravity, 0.1f, false)
+FAKE_INT_CVAR(cs2f_rocket_explode_probability, "The probability of detonate chance", g_iRocketExplodeProbability, 5, false)
+FAKE_FLOAT_CVAR(cs2f_rocket_exempt_time, "How long to detonate in seconds after launch", g_flRocketExemptTime, 4.0f, false)
 
 extern CGlobalVars* gpGlobals;
 
@@ -41,6 +41,7 @@ void AttachFlame(CCSPlayerPawn* pPawn)
 	pKeyValues->SetVector("origin", vecOrigin);
 	pKeyValues->SetBool("start_active", true);
 
+	pEffect->SetParent(pPawn);
 	// SetParent, FollowEntity causes crash, idk why
 	//pEffect->AcceptInput("SetParent", "!activator", pPawn);
 	pEffect->DispatchSpawn(pKeyValues);
@@ -136,6 +137,7 @@ void Rocket_Perform(CCSPlayerPawn* pPawn)
 
 		if (rand() % 100 < g_iRocketExplodeProbability)
 		{
+			ClientPrintAll(HUD_PRINTTALK, " \x04[Rocket] \x03%s\x01はロケットが不発だった！", pPawn->GetOriginalController()->GetPlayerName());
 			pPawn->EmitSound(ROCKET_SURVIVEDSOUND);
 			pPawn->GetOriginalController()->GetZEPlayer()->SetRocketFallDamageIgnore(true);
 

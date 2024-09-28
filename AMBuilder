@@ -81,6 +81,8 @@ for sdk_target in MMSPlugin.sdk_targets:
     'src/idlemanager.cpp',
     'src/saysound.cpp',
     'src/rocket.cpp',
+    'src/skinchooser.cpp',
+    'src/database.cpp',
     'sdk/entity2/entitysystem.cpp',
     'sdk/entity2/entityidentity.cpp',
     'sdk/entity2/entitykeyvalues.cpp',

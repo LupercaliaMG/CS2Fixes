@@ -173,6 +173,12 @@
     <ClCompile Include="sdk\public\tier0\memoverride.cpp">
       <Filter>Source Files\sdk</Filter>
     </ClCompile>
+    <ClCompile Include="src\rocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\saysound.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\mempatch.h">
@@ -348,6 +354,12 @@
     </ClInclude>
     <ClInclude Include="src\cs2_sdk\entity\cenvhudhint.h">
       <Filter>Header Files\cs2_sdk\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rocket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\saysound.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
