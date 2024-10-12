@@ -192,6 +192,7 @@
     <ClCompile Include="src\ctimer.cpp" />
     <ClCompile Include="src\customio.cpp" />
     <ClCompile Include="src\cvars.cpp" />
+    <ClCompile Include="src\database.cpp" />
     <ClCompile Include="src\detours.cpp" />
     <ClCompile Include="src\discord.cpp" />
     <ClCompile Include="src\entities.cpp" />
@@ -205,7 +206,7 @@
     <ClCompile Include="src\panoramavote.cpp" />
     <ClCompile Include="src\patches.cpp" />
     <ClCompile Include="src\playermanager.cpp" />
-    <ClCompile Include="src\playerskinmanager.cpp" />
+    <ClCompile Include="src\skinchooser.cpp" />
     <ClCompile Include="src\rocket.cpp" />
     <ClCompile Include="src\saysound.cpp" />
     <ClCompile Include="src\user_preferences.cpp" />
@@ -251,6 +252,7 @@
     <ClInclude Include="src\cdetour.h" />
     <ClInclude Include="src\ctimer.h" />
     <ClInclude Include="src\customio.h" />
+    <ClInclude Include="src\database.h" />
     <ClInclude Include="src\detours.h" />
     <ClInclude Include="src\discord.h" />
     <ClInclude Include="src\entities.h" />
@@ -264,7 +266,7 @@
     <ClInclude Include="src\panoramavote.h" />
     <ClInclude Include="src\patches.h" />
     <ClInclude Include="src\playermanager.h" />
-    <ClInclude Include="src\playerskinmanager.h" />
+    <ClInclude Include="src\skinchooser.h" />
     <ClInclude Include="src\recipientfilters.h" />
     <ClInclude Include="src\rocket.h" />
     <ClInclude Include="src\saysound.h" />

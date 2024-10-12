@@ -38,7 +38,7 @@ bool SetPlayerSkin(CCSPlayerController* pController, const char* pszSkin)
 		{
 			ZEPlayer* pZEPlayer = pController->GetZEPlayer();
 			if (!g_vecModelEntries[i]->szSteamId.empty() &&
-				(g_vecModelEntries[i]->szSteamId.find(std::to_string(pZEPlayer->GetSteamId64())) == std::string::npos || pZEPlayer->IsAdminFlagSet(ADMFLAG_GENERIC)))
+				(g_vecModelEntries[i]->szSteamId.find(std::to_string(pZEPlayer->GetSteamId64())) == std::string::npos && !pZEPlayer->IsAdminFlagSet(ADMFLAG_GENERIC)))
 			{
 				ClientPrint(pController, HUD_PRINTTALK, SKINCHOOSER_PREFIX "You can not use private skin!");
 				return false;
