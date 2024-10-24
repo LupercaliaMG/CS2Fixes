@@ -211,8 +211,10 @@ CON_COMMAND_CHAT_FLAGS(evilrocket, "<name>", ADMFLAG_SLAY)
 	int iCommandPlayer = player ? player->GetPlayerSlot() : -1;
 	int iNumClients = 0;
 	int pSlots[MAXPLAYERS];
+	ETargetType nType;
 
-	ETargetType nType = g_playerManager->TargetPlayerString(iCommandPlayer, args[1], iNumClients, pSlots);
+	if (!g_playerManager->CanTargetPlayers(player, args[1], iNumClients, pSlots, NO_BOT | NO_IMMUNITY, nType))
+		return;
 
 	if (!iNumClients)
 	{

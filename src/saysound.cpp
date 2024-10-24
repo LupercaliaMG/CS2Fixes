@@ -124,6 +124,7 @@ bool SaySound_OnChat(CCSPlayerController* pController, const char* pMessage)
 	fixedName = std::regex_replace(fixedName, std::regex("\\~"), "tilda");
 	fixedName = std::regex_replace(fixedName, std::regex("\\-"), "_");
 	fixedName = std::regex_replace(fixedName, std::regex("\\^"), "CARET");
+	fixedName = std::regex_replace(fixedName, std::regex("\\ "), "SP4CE");
 
 	for (KeyValues* pKey = g_pSaySoundsKV->GetFirstSubKey(); pKey; pKey = pKey->GetNextKey())
 	{
@@ -133,7 +134,7 @@ bool SaySound_OnChat(CCSPlayerController* pController, const char* pMessage)
 
 		if (V_stricmp(pszName, fixedName.c_str()) == 0)
 		{
-			ClientPrintAll(HUD_PRINTTALK, " \x03%s \x01played \x03%s", pController->GetPlayerName(), args[0]);
+			ClientPrintAll(HUD_PRINTTALK, " \x03%s \x01played \x07%d \x04%s", pController->GetPlayerName(), pitch, args[0]);
 
 			EmitSaySound(pKey->GetString("sound_trigger"), pitch, duration);
 			return true;
