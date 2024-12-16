@@ -21,8 +21,11 @@ struct PlayerModelEntry
 CUtlVector<PlayerModelEntry*> g_vecModelEntries;
 void LoadSkinsData();
 
+std::string g_szDefaultSkin;
+
 bool g_bSkinChooserEnable = true;
 FAKE_BOOL_CVAR(cs2f_skinchooser_enable, "Allow skinchooser to players", g_bSkinChooserEnable, true, false)
+FAKE_STRING_CVAR(cs2f_skinchooser_default, "Player default skin", g_szDefaultSkin, false)
 
 CON_COMMAND_F(cs2f_skinchooser_reload, "Reload Skinchooser", FCVAR_LINKED_CONCOMMAND | FCVAR_SPONLY | FCVAR_PROTECTED)
 {
@@ -30,8 +33,17 @@ CON_COMMAND_F(cs2f_skinchooser_reload, "Reload Skinchooser", FCVAR_LINKED_CONCOM
 	Message("Reloaded Skinchooser config.\n");
 }
 
-bool SetPlayerSkin(CCSPlayerController* pController, const char* pszSkin)
+bool SetPlayerSkin(CCSPlayerController* pController, const char* pszSkin, bool bNotify = true)
 {
+	if (V_strcmp(pszSkin, "default") == 0)
+	{
+		ZEPlayer* pZEPlayer = pController->GetZEPlayer();
+		if (bNotify)
+			ClientPrint(pController, HUD_PRINTTALK, SKINCHOOSER_PREFIX "Changed to default");
+		pZEPlayer->SetSkinPreference("");
+		return true;
+	}
+
 	FOR_EACH_VEC(g_vecModelEntries, i)
 	{
 		if (V_stricmp(g_vecModelEntries[i]->szName.c_str(), pszSkin) == 0)
@@ -44,7 +56,8 @@ bool SetPlayerSkin(CCSPlayerController* pController, const char* pszSkin)
 				return false;
 			}
 
-			ClientPrint(pController, HUD_PRINTTALK, SKINCHOOSER_PREFIX "Changed to %s", g_vecModelEntries[i]->szName.c_str());
+			if (bNotify)
+				ClientPrint(pController, HUD_PRINTTALK, SKINCHOOSER_PREFIX "Changed to %s", g_vecModelEntries[i]->szName.c_str());
 			pController->GetPlayerPawn()->SetModel(g_vecModelEntries[i]->szModelPath.c_str());
 			pZEPlayer->SetSkinPreference(g_vecModelEntries[i]->szName.c_str());
 			return true;
@@ -86,7 +99,10 @@ void SkinChooser_OnPlayerSpawn(CCSPlayerController* pController)
 
 		const char* pszSkinPreference = pController->GetZEPlayer()->GetSkinPreference();
 		if (pszSkinPreference[0] != '\0')
-			SetPlayerSkin(pController, pszSkinPreference);
+			SetPlayerSkin(pController, pszSkinPreference, false);
+		else if (g_szDefaultSkin.length() > 0)
+			SetPlayerSkin(pController, g_szDefaultSkin.c_str(), false);
+
 
 		return -1.0f;
 	});

@@ -620,6 +620,7 @@ void CPlayerManager::OnClientDisconnect(CPlayerSlot slot)
 {
 	Message("%d disconnected\n", slot.Get());
 
+	ZEPlayer* pPlayer = m_vecPlayers[slot.Get()];
 	Database_SavePlayer(slot.Get());
 
 	g_pUserPreferencesSystem->PushPreferences(slot.Get());

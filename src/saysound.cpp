@@ -94,6 +94,19 @@ int RoundToMultiple(int toRound, int multiple)
 	return iratio * multiple;
 }
 
+std::string GetSaySoundName(const char* pMessage)
+{
+	const char* paramPos = std::strchr(pMessage, '@');
+	if (!paramPos)
+		paramPos = std::strchr(pMessage, '#');
+
+	if (!paramPos)
+		return pMessage;
+
+	std::string result = std::string(pMessage, paramPos - pMessage);
+	return std::regex_replace(result, std::regex("\\s+$"), "");
+}
+
 bool SaySound_OnChat(CCSPlayerController* pController, const char* pMessage)
 {
 	if (!g_pSaySoundsKV || !g_bSaysoundsEnable)
@@ -114,17 +127,16 @@ bool SaySound_OnChat(CCSPlayerController* pController, const char* pMessage)
 			}
 			else if (*args[i] == '#')
 				duration = MAX(0.0f, V_StringToFloat32(args[i] + 1, 0.0f));
-			else
-				return false;
 		}
 	}
 
-	std::string fixedName = args[0];
+	std::string fixedName = GetSaySoundName(pMessage);
+	std::string szSaySoundText = fixedName;
 	fixedName = std::regex_replace(fixedName, std::regex("\\!"), "EXCL");
 	fixedName = std::regex_replace(fixedName, std::regex("\\~"), "tilda");
 	fixedName = std::regex_replace(fixedName, std::regex("\\-"), "_");
 	fixedName = std::regex_replace(fixedName, std::regex("\\^"), "CARET");
-	fixedName = std::regex_replace(fixedName, std::regex("\\ "), "SP4CE");
+	fixedName = std::regex_replace(fixedName, std::regex("\\s"), "SP4CE");
 
 	for (KeyValues* pKey = g_pSaySoundsKV->GetFirstSubKey(); pKey; pKey = pKey->GetNextKey())
 	{
@@ -134,7 +146,7 @@ bool SaySound_OnChat(CCSPlayerController* pController, const char* pMessage)
 
 		if (V_stricmp(pszName, fixedName.c_str()) == 0)
 		{
-			ClientPrintAll(HUD_PRINTTALK, " \x03%s \x01played \x07%d \x04%s", pController->GetPlayerName(), pitch, args[0]);
+			ClientPrintAll(HUD_PRINTTALK, " \x03%s \x01played \x07%d \x04%s", pController->GetPlayerName(), pitch, szSaySoundText.c_str());
 
 			EmitSaySound(pKey->GetString("sound_trigger"), pitch, duration);
 			return true;

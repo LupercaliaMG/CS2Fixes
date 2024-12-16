@@ -71,6 +71,11 @@ void Database_OnPlayerAuthenticated(ZEPlayer* pPlayer)
 			pPlayer->SetSaysoundEnable(results->GetInt(0));
 			pPlayer->SetSkinPreference(results->GetString(1));
 		}
+		else
+		{
+			pPlayer->SetSaysoundEnable(true);
+			pPlayer->SetSkinPreference("");
+		}
 
 		pPlayer->SetDBLoaded(true);
 	});
@@ -86,8 +91,10 @@ void Database_SavePlayer(CPlayerSlot slot)
 	if (!pPlayer)
 		return;
 
-	if (!pPlayer->IsDBLoaded())
+	if (!pPlayer->IsAuthenticated() || !pPlayer->IsDBLoaded())
 		return;
+
+	Message(pPlayer->GetSkinPreference());
 
 	Transaction txn;
 	char szQuery[1024];
