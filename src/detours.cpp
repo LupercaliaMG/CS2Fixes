@@ -95,7 +95,7 @@ CConVar<bool> g_cvarBlockMolotovSelfDmg("cs2f_block_molotov_self_dmg", FCVAR_NON
 CConVar<bool> g_cvarBlockAllDamage("cs2f_block_all_dmg", FCVAR_NONE, "Whether to block all damage to players", false);
 CConVar<bool> g_cvarFixBlockDamage("cs2f_fix_block_dmg", FCVAR_NONE, "Whether to fix block-damage on players", false);
 
-void FASTCALL Detour_CBaseEntity_TakeDamageOld(CBaseEntity* pThis, CTakeDamageInfo* inputInfo)
+int64 FASTCALL Detour_CBaseEntity_TakeDamageOld(CBaseEntity* pThis, CTakeDamageInfo* inputInfo)
 {
 #ifdef _DEBUG
 	Message("\n--------------------------------\n"
@@ -116,7 +116,7 @@ void FASTCALL Detour_CBaseEntity_TakeDamageOld(CBaseEntity* pThis, CTakeDamageIn
 
 	// Block all player damage if desired
 	if (g_cvarBlockAllDamage.Get() && pThis->IsPawn())
-		return;
+		return 0;
 
 	if (!Rocket_Detour_OnTakeDamageOld(pThis, inputInfo))
 		return;
@@ -145,9 +145,14 @@ void FASTCALL Detour_CBaseEntity_TakeDamageOld(CBaseEntity* pThis, CTakeDamageIn
 
 	// Prevent molly on self
 	if (g_cvarBlockMolotovSelfDmg.Get() && inputInfo->m_hAttacker == pThis && !V_strncmp(pszInflictorClass, "inferno", 7))
-		return;
+		return 0;
 
-	CBaseEntity_TakeDamageOld(pThis, inputInfo);
+	const auto damage = CBaseEntity_TakeDamageOld(pThis, inputInfo);
+
+	if (damage > 0 && g_cvarEnableZR.Get() && pThis->IsPawn())
+		ZR_OnPlayerTakeDamage(reinterpret_cast<CCSPlayerPawn*>(pThis), inputInfo, static_cast<int32>(damage));
+
+	return damage;
 }
 
 CConVar<bool> g_cvarUseOldPush("cs2f_use_old_push", FCVAR_NONE, "Whether to use the old CSGO trigger_push behavior", false);
