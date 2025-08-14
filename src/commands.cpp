@@ -52,6 +52,7 @@ extern IGameEventSystem* g_gameEventSystem;
 extern CGameEntitySystem* g_pEntitySystem;
 extern IVEngineServer2* g_pEngineServer2;
 extern ISteamHTTP* g_http;
+extern CConVar<CUtlString> g_cvarFlashLightAttachment;
 
 CConVar<bool> g_cvarEnableCommands("cs2f_commands_enable", FCVAR_NONE, "Whether to enable chat commands", false);
 CConVar<bool> g_cvarEnableAdminCommands("cs2f_admin_commands_enable", FCVAR_NONE, "Whether to enable admin chat commands", false);
@@ -135,13 +136,14 @@ void ParseWeaponCommand(const CCommand& args, CCSPlayerController* player)
 		return;
 	}
 
+	static ConVarRefAbstract ammo_grenade_limit_default("ammo_grenade_limit_default"), ammo_grenade_limit_total("ammo_grenade_limit_total"), mp_weapons_allow_typecount("mp_weapons_allow_typecount");
+
+	int iGrenadeLimitDefault = ammo_grenade_limit_default.GetInt();
+	int iGrenadeLimitTotal = ammo_grenade_limit_total.GetInt();
+	int iWeaponLimit = mp_weapons_allow_typecount.GetInt();
+
 	if (pWeaponInfo->m_eSlot == GEAR_SLOT_GRENADES)
 	{
-		static ConVarRefAbstract ammo_grenade_limit_default("ammo_grenade_limit_default"), ammo_grenade_limit_total("ammo_grenade_limit_total");
-
-		int iGrenadeLimitDefault = ammo_grenade_limit_default.GetInt();
-		int iGrenadeLimitTotal = ammo_grenade_limit_total.GetInt();
-
 		int iMatchingGrenades = GetGrenadeAmmo(pWeaponServices, pWeaponInfo);
 		int iTotalGrenades = GetGrenadeAmmoTotal(pWeaponServices);
 
@@ -158,35 +160,38 @@ void ParseWeaponCommand(const CCommand& args, CCSPlayerController* player)
 		}
 	}
 
+	int maxAmount;
+
 	if (pWeaponInfo->m_nMaxAmount)
+		maxAmount = pWeaponInfo->m_nMaxAmount;
+	else if (pWeaponInfo->m_eSlot == GEAR_SLOT_GRENADES)
+		maxAmount = iGrenadeLimitDefault;
+	else
+		maxAmount = iWeaponLimit == -1 ? 9999 : iWeaponLimit;
+
+	CUtlVector<WeaponPurchaseCount_t>* weaponPurchases = pPawn->m_pActionTrackingServices->m_weaponPurchasesThisRound().m_weaponPurchases;
+	bool found = false;
+	FOR_EACH_VEC(*weaponPurchases, i)
 	{
-		CUtlVector<WeaponPurchaseCount_t>* weaponPurchases = pPawn->m_pActionTrackingServices->m_weaponPurchasesThisRound().m_weaponPurchases;
-		bool found = false;
-		FOR_EACH_VEC(*weaponPurchases, i)
+		WeaponPurchaseCount_t& purchase = (*weaponPurchases)[i];
+		if (purchase.m_nItemDefIndex == pWeaponInfo->m_iItemDefinitionIndex)
 		{
-			WeaponPurchaseCount_t& purchase = (*weaponPurchases)[i];
-			if (purchase.m_nItemDefIndex == pWeaponInfo->m_iItemDefinitionIndex)
+			// Note ammo_grenade_limit_total is not followed here, only for checking inventory space
+			if (purchase.m_nCount >= maxAmount)
 			{
-				if (purchase.m_nCount >= pWeaponInfo->m_nMaxAmount)
-				{
-					ClientPrint(player, HUD_PRINTTALK, CHAT_PREFIX "You cannot buy any more %s (Max %i)", pWeaponInfo->m_pName, pWeaponInfo->m_nMaxAmount);
-					return;
-				}
-				purchase.m_nCount += 1;
-				found = true;
-				break;
+				ClientPrint(player, HUD_PRINTTALK, CHAT_PREFIX "You cannot buy any more %s (Max %i)", pWeaponInfo->m_pName, maxAmount);
+				return;
 			}
+			purchase.m_nCount += 1;
+			found = true;
+			break;
 		}
+	}
 
-		if (!found)
-		{
-			WeaponPurchaseCount_t purchase = {};
-
-			purchase.m_nCount = 1;
-			purchase.m_nItemDefIndex = pWeaponInfo->m_iItemDefinitionIndex;
-
-			weaponPurchases->AddToTail(purchase);
-		}
+	if (!found)
+	{
+		WeaponPurchaseCount_t purchase(pPawn, pWeaponInfo->m_iItemDefinitionIndex, 1);
+		weaponPurchases->AddToTail(purchase);
 	}
 
 	if (pWeaponInfo->m_eSlot == GEAR_SLOT_RIFLE || pWeaponInfo->m_eSlot == GEAR_SLOT_PISTOL)
@@ -210,15 +215,11 @@ void ParseWeaponCommand(const CCommand& args, CCSPlayerController* player)
 
 	CBasePlayerWeapon* pWeapon = pItemServices->GiveNamedItemAws(pWeaponInfo->m_pClass);
 
-	// Normally shouldn't be possible, but avoid crashes in some edge cases
+	// Normally shouldn't be possible, but avoid issues in some edge cases
 	if (!pWeapon)
 		return;
 
 	player->m_pInGameMoneyServices->m_iAccount = money - pWeaponInfo->m_nPrice;
-
-	// If the weapon spawn goes through AWS, it needs to be manually selected because it spawns dropped in-world due to ZR enforcing mp_weapons_allow_* cvars against T's
-	if (pWeaponInfo->m_eSlot == GEAR_SLOT_RIFLE || pWeaponInfo->m_eSlot == GEAR_SLOT_PISTOL)
-		pWeaponServices->SelectItem(pWeapon);
 
 	ClientPrint(player, HUD_PRINTTALK, CHAT_PREFIX "You have purchased %s for $%i", pWeaponInfo->m_pName, pWeaponInfo->m_nPrice);
 }
@@ -254,6 +255,12 @@ void RegisterWeaponCommands()
 	}
 }
 
+std::map<uint32, CChatCommand*>& CommandList()
+{
+	static std::map<uint32, CChatCommand*> commandList;
+	return commandList;
+}
+
 void ParseChatCommand(const char* pMessage, CCSPlayerController* pController)
 {
 	if (!pController || !pController->IsConnected())
@@ -268,10 +275,10 @@ void ParseChatCommand(const char* pMessage, CCSPlayerController* pController)
 	for (int i = 0; name[i]; i++)
 		name[i] = tolower(name[i]);
 
-	uint16 index = g_CommandList.Find(hash_32_fnv1a_const(name.c_str()));
+	uint32 nameHash = hash_32_fnv1a_const(name.c_str());
 
-	if (g_CommandList.IsValidIndex(index))
-		(*g_CommandList[index])(args, pController);
+	if (CommandList().contains(nameHash))
+		(*CommandList()[nameHash])(args, pController);
 }
 
 bool CChatCommand::CheckCommandAccess(CCSPlayerController* pPlayer, uint64 flags)
@@ -444,25 +451,25 @@ CON_COMMAND_CHAT(hide, "<distance> - Hide nearby players")
 		return;
 	}
 
-	int distance;
-
-	if (args.ArgC() < 2)
-		distance = g_cvarDefaultHideDistance.Get();
-	else
-		distance = V_StringToInt32(args[1], -1);
-
-	if (distance > g_cvarMaxHideDistance.Get() || distance < 0)
-	{
-		ClientPrint(player, HUD_PRINTTALK, CHAT_PREFIX "You can only hide players between 0 and %i units away.", g_cvarMaxHideDistance.Get());
-		return;
-	}
-
 	ZEPlayer* pZEPlayer = player->GetZEPlayer();
 
 	// Something has to really go wrong for this to happen
 	if (!pZEPlayer)
 	{
 		Warning("%s Tried to access a null ZEPlayer!!\n", player->GetPlayerName());
+		return;
+	}
+
+	int distance;
+
+	if (args.ArgC() < 2)
+		distance = pZEPlayer->GetHideDistance() > 0 ? pZEPlayer->GetHideDistance() : g_cvarDefaultHideDistance.Get();
+	else
+		distance = V_StringToInt32(args[1], -1);
+
+	if (distance > g_cvarMaxHideDistance.Get() || distance < 0)
+	{
+		ClientPrint(player, HUD_PRINTTALK, CHAT_PREFIX "You can only hide players between\x06 0\x01 and \x06%i units\x01 away.", g_cvarMaxHideDistance.Get());
 		return;
 	}
 
@@ -475,7 +482,7 @@ CON_COMMAND_CHAT(hide, "<distance> - Hide nearby players")
 	if (distance == 0)
 		ClientPrint(player, HUD_PRINTTALK, CHAT_PREFIX "Hiding players is now disabled.");
 	else
-		ClientPrint(player, HUD_PRINTTALK, CHAT_PREFIX "Now hiding players within %i units.", distance);
+		ClientPrint(player, HUD_PRINTTALK, CHAT_PREFIX "Now hiding players within \x06%i units\x01.", distance);
 }
 
 void PrintHelp(const CCommand& args, CCSPlayerController* player)
@@ -487,9 +494,9 @@ void PrintHelp(const CCommand& args, CCSPlayerController* player)
 		{
 			ClientPrint(player, HUD_PRINTCONSOLE, "The list of all commands is:");
 
-			FOR_EACH_VEC(g_CommandList, i)
+			for (const auto& cmdPair : CommandList())
 			{
-				CChatCommand* cmd = g_CommandList[i];
+				CChatCommand* cmd = cmdPair.second;
 
 				if (!cmd->IsCommandFlagSet(CMDFLAG_NOHELP))
 					rgstrCommands.push_back(std::string("c_") + cmd->GetName() + " " + cmd->GetDescription());
@@ -502,9 +509,9 @@ void PrintHelp(const CCommand& args, CCSPlayerController* player)
 
 			ZEPlayer* pZEPlayer = player->GetZEPlayer();
 
-			FOR_EACH_VEC(g_CommandList, i)
+			for (const auto& cmdPair : CommandList())
 			{
-				CChatCommand* cmd = g_CommandList[i];
+				CChatCommand* cmd = cmdPair.second;
 				uint64 flags = cmd->GetAdminFlags();
 
 				if ((pZEPlayer->IsAdminFlagSet(flags) || ((flags & FLAG_LEADER) == FLAG_LEADER && pZEPlayer->IsLeader()))
@@ -534,9 +541,9 @@ void PrintHelp(const CCommand& args, CCSPlayerController* player)
 
 		if (!player)
 		{
-			FOR_EACH_VEC(g_CommandList, i)
+			for (const auto& cmdPair : CommandList())
 			{
-				CChatCommand* cmd = g_CommandList[i];
+				CChatCommand* cmd = cmdPair.second;
 
 				if (!cmd->IsCommandFlagSet(CMDFLAG_NOHELP)
 					&& ((!bOnlyCheckStart && V_stristr(cmd->GetName(), pszSearchTerm))
@@ -548,9 +555,9 @@ void PrintHelp(const CCommand& args, CCSPlayerController* player)
 		{
 			ZEPlayer* pZEPlayer = player->GetZEPlayer();
 
-			FOR_EACH_VEC(g_CommandList, i)
+			for (const auto& cmdPair : CommandList())
 			{
-				CChatCommand* cmd = g_CommandList[i];
+				CChatCommand* cmd = cmdPair.second;
 				uint64 flags = cmd->GetAdminFlags();
 
 				if ((pZEPlayer->IsAdminFlagSet(flags) || ((flags & FLAG_LEADER) == FLAG_LEADER && pZEPlayer->IsLeader()))
@@ -651,9 +658,9 @@ CON_COMMAND_CHAT(spec, "[name] - Spectate another player or join spectators")
 		CPlayer_ObserverServices* pObserverServices = pPlayer->GetPawn()->m_pObserverServices();
 		if (!pObserverServices)
 			return -1.0f;
-		pObserverServices->m_iObserverMode.Set(OBS_MODE_IN_EYE);
-		pObserverServices->m_iObserverLastMode.Set(OBS_MODE_ROAMING);
-		pObserverServices->m_hObserverTarget.Set(pTargetPlayer->GetPawn());
+		pObserverServices->m_iObserverMode = OBS_MODE_IN_EYE;
+		pObserverServices->m_iObserverLastMode = OBS_MODE_ROAMING;
+		pObserverServices->m_hObserverTarget = pTargetPlayer->GetPawn();
 		ClientPrint(pPlayer, HUD_PRINTTALK, CHAT_PREFIX "Spectating player %s.", pTargetPlayer->GetPlayerName());
 		return -1.0f;
 	});
@@ -800,10 +807,8 @@ CON_COMMAND_CHAT(fl, "- Flashlight")
 
 	pLight->DispatchSpawn(pKeyValues);
 
-	variant_t val("!player");
-	pLight->AcceptInput("SetParent", &val);
-	variant_t val2("clip_limit");
-	pLight->AcceptInput("SetParentAttachmentMaintainOffset", &val2);
+	pLight->SetParent(pPawn);
+	pLight->AcceptInput("SetParentAttachmentMaintainOffset", g_cvarFlashLightAttachment.Get().String());
 }
 
 CON_COMMAND_CHAT(say, "<message> - Say something using console")
