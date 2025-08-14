@@ -8,14 +8,10 @@
 
 KeyValues *g_pSaySoundsKV;
 
-extern CGlobalVars* gpGlobals;
-
 void LoadSaySoundsKV();
 
-bool g_bSaysoundsEnable = true;
-bool g_bExtraParams = true;
-FAKE_BOOL_CVAR(cs2f_saysound_enable, "Allow players to play saysound", g_bSaysoundsEnable, false, false)
-FAKE_BOOL_CVAR(cs2f_saysound_extra_params, "Allow extra parameters of saysounds", g_bExtraParams, false, false)
+CConVar<bool> g_cvarSaySoundEnable("cs2f_saysound_enable", FCVAR_NONE, "Allow players to play saysound", true);
+CConVar<bool> g_cvarAllowExtraParams("cs2f_saysound_extra_params", FCVAR_NONE, "Allow extra parameters of saysounds", true);
 
 CON_COMMAND_F(cs2f_saysound_reload, "Reload Saysound", FCVAR_LINKED_CONCOMMAND | FCVAR_SPONLY | FCVAR_PROTECTED)
 {
@@ -25,7 +21,7 @@ CON_COMMAND_F(cs2f_saysound_reload, "Reload Saysound", FCVAR_LINKED_CONCOMMAND |
 
 CON_COMMAND_CHAT(ss, "- toggle saysound")
 {
-	if (!g_bSaysoundsEnable)
+	if (!g_cvarSaySoundEnable.Get())
 		return;
 
 	if (!player)
@@ -49,7 +45,7 @@ void EmitSaySound(const char *pszSound, int pitch, float duration)
 	else
 		V_strncpy(szSoundScape, pszSound, sizeof(szSoundScape));
 
-	for (int i = 0; i < gpGlobals->maxClients; i++)
+	for (int i = 0; i < GetGlobals()->maxClients; i++)
 	{
 		CCSPlayerController* pController = CCSPlayerController::FromSlot(i);
 		if (!pController || !pController->IsConnected() || pController->IsBot() || !pController->GetZEPlayer()->IsSaySoundEnable())
@@ -109,14 +105,14 @@ std::string GetSaySoundName(const char* pMessage)
 
 bool SaySound_OnChat(CCSPlayerController* pController, const char* pMessage)
 {
-	if (!g_pSaySoundsKV || !g_bSaysoundsEnable)
+	if (!g_pSaySoundsKV || !g_cvarSaySoundEnable.Get())
 		return false;
 	
 	int pitch = 100;
 	float duration = 0.0f;
 	CCommand args;
 	args.Tokenize(pMessage);
-	if (g_bExtraParams)
+	if (g_cvarAllowExtraParams.Get())
 	{
 		for (int i = 1; i < args.ArgC(); i++)
 		{

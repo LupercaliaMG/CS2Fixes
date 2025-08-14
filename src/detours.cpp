@@ -119,7 +119,7 @@ int64 FASTCALL Detour_CBaseEntity_TakeDamageOld(CBaseEntity* pThis, CTakeDamageI
 		return 0;
 
 	if (!Rocket_Detour_OnTakeDamageOld(pThis, inputInfo))
-		return;
+		return 0;
 
 	CBaseEntity* pInflictor = inputInfo->m_hInflictor.Get();
 	const char* pszInflictorClass = pInflictor ? pInflictor->GetClassname() : "";

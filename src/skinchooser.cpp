@@ -21,11 +21,8 @@ struct PlayerModelEntry
 CUtlVector<PlayerModelEntry*> g_vecModelEntries;
 void LoadSkinsData();
 
-std::string g_szDefaultSkin;
-
-bool g_bSkinChooserEnable = true;
-FAKE_BOOL_CVAR(cs2f_skinchooser_enable, "Allow skinchooser to players", g_bSkinChooserEnable, true, false)
-FAKE_STRING_CVAR(cs2f_skinchooser_default, "Player default skin", g_szDefaultSkin, false)
+CConVar<bool> g_cvarEnable("cs2f_skinchooser_enable", FCVAR_NONE, "Allow skinchooser to players", true);
+CConVar<CUtlString> g_cvarDefaultSkin("cs2f_skinchooser_default", FCVAR_NONE, "Player default skin", "");
 
 CON_COMMAND_F(cs2f_skinchooser_reload, "Reload Skinchooser", FCVAR_LINKED_CONCOMMAND | FCVAR_SPONLY | FCVAR_PROTECTED)
 {
@@ -84,7 +81,7 @@ void SkinChooser_Precache(IEntityResourceManifest* pResourceManifest)
 
 void SkinChooser_OnPlayerSpawn(CCSPlayerController* pController)
 {
-	if (!g_bSkinChooserEnable)
+	if (!g_cvarEnable.Get())
 		return;
 
 	CHandle<CCSPlayerController> handle = pController->GetHandle();
@@ -100,9 +97,8 @@ void SkinChooser_OnPlayerSpawn(CCSPlayerController* pController)
 		const char* pszSkinPreference = pController->GetZEPlayer()->GetSkinPreference();
 		if (pszSkinPreference[0] != '\0')
 			SetPlayerSkin(pController, pszSkinPreference, false);
-		else if (g_szDefaultSkin.length() > 0)
-			SetPlayerSkin(pController, g_szDefaultSkin.c_str(), false);
-
+		else if (g_cvarDefaultSkin.Get().Length() > 0)
+			SetPlayerSkin(pController, g_cvarDefaultSkin.Get().String(), false);
 
 		return -1.0f;
 	});
@@ -145,7 +141,7 @@ CON_COMMAND_CHAT(skin, "- change player skin")
 	if (!player)
 		return;
 
-	if (!g_bSkinChooserEnable)
+	if (!g_cvarEnable.Get())
 		return;
 
 	if (SetPlayerSkin(player, args[1]))

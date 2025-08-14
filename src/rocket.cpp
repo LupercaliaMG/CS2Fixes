@@ -15,18 +15,11 @@
 #define ROCKET_STEAMPARTICLE "particles/burning_fx/gas_cannister_trail_smoke.vpcf"
 #define ROCKET_EXPLODEPARTICLE "particles/explosions_fx/explosion_basic.vpcf"
 
-bool g_bRocketMeEnabled = true;
-float g_flRocketExplodeTime = 3.0f;
-float g_flRocketGravity = 0.1f;
-int g_iRocketExplodeProbability = 5;
-float g_flRocketExemptTime = 4.0f;
-FAKE_BOOL_CVAR(cs2f_rocketme_enabled, "Allow players to suicide as a rocket", g_bRocketMeEnabled, true, false)
-FAKE_FLOAT_CVAR(cs2f_rocket_explode_time, "How long to detonate in seconds after launch", g_flRocketExplodeTime, 3.0f, false)
-FAKE_FLOAT_CVAR(cs2f_rocket_gravity, "How long to detonate in seconds after launch", g_flRocketGravity, 0.1f, false)
-FAKE_INT_CVAR(cs2f_rocket_explode_probability, "The probability of detonate chance", g_iRocketExplodeProbability, 5, false)
-FAKE_FLOAT_CVAR(cs2f_rocket_exempt_time, "How long to detonate in seconds after launch", g_flRocketExemptTime, 4.0f, false)
-
-extern CGlobalVars* gpGlobals;
+CConVar<bool> g_cvarRocketMeEnabled("cs2f_rocketme_enabled", FCVAR_NONE, "Allow players to suicide as a rocket", false);
+CConVar<float> g_cvarRocketExplodeTime("cs2f_rocket_explode_time", FCVAR_NONE, "How long to detonate in seconds after launch", 3.0f);
+CConVar<float> g_cvarRocketGravity("cs2f_rocket_gravity", FCVAR_NONE, "Rocket gravity", 0.1f);
+CConVar<int> g_cvarRocketExplodeProb("cs2f_rocket_explode_probability", FCVAR_NONE, "The probability of detonate chance", 5);
+CConVar<float> g_cvarRocketExemptTime("cs2f_rocket_exempt_time", FCVAR_NONE, "", 4.0f);
 
 void AttachFlame(CCSPlayerPawn* pPawn)
 {
@@ -46,8 +39,8 @@ void AttachFlame(CCSPlayerPawn* pPawn)
 	//pEffect->AcceptInput("SetParent", "!activator", pPawn);
 	pEffect->DispatchSpawn(pKeyValues);
 
-	UTIL_AddEntityIOEvent(pEffect, "DestroyImmediately", nullptr, nullptr, "", g_flRocketExplodeTime);
-	UTIL_AddEntityIOEvent(pEffect, "Kill", nullptr, nullptr, "", g_flRocketExplodeTime + 0.02f);
+	UTIL_AddEntityIOEvent(pEffect, "DestroyImmediately", nullptr, nullptr, "", g_cvarRocketExplodeTime.Get());
+	UTIL_AddEntityIOEvent(pEffect, "Kill", nullptr, nullptr, "", g_cvarRocketExplodeTime.Get() + 0.02f);
 }
 
 void MakeExplosionEffect(CCSPlayerPawn *pPawn)
@@ -79,7 +72,7 @@ void Rocket_Precache(IEntityResourceManifest* pResourceManifest)
 
 void Rocket_OnRoundStart()
 {
-	for (int i = 0; i < gpGlobals->maxClients; i++)
+	for (int i = 0; i < GetGlobals()->maxClients; i++)
 	{
 		CCSPlayerController* pController = CCSPlayerController::FromSlot(i);
 		if (!pController || !pController->IsConnected())
@@ -121,12 +114,12 @@ void Rocket_Perform(CCSPlayerPawn* pPawn)
 
 	Vector vel = Vector(0, 0, 800);
 	pPawn->Teleport(nullptr, nullptr, &vel);
-	pPawn->m_flGravityScale = g_flRocketGravity;
+	pPawn->m_flGravityScale = g_cvarRocketGravity.Get();
 
 	pPawn->GetOriginalController()->GetZEPlayer()->SetInRocket(true);
 
 	CHandle<CCSPlayerPawn> hPawnHandle = pPawn->GetHandle();
-	new CTimer(g_flRocketExplodeTime, false, false, [hPawnHandle]()
+	new CTimer(g_cvarRocketExplodeTime.Get(), false, false, [hPawnHandle]()
 	{
 		CCSPlayerPawn* pPawn = hPawnHandle.Get();
 		if (!pPawn || !pPawn->IsAlive())
@@ -135,13 +128,13 @@ void Rocket_Perform(CCSPlayerPawn* pPawn)
 		pPawn->m_flGravityScale = 1.0f;
 		pPawn->GetOriginalController()->GetZEPlayer()->SetInRocket(false);
 
-		if (rand() % 100 < g_iRocketExplodeProbability)
+		if (rand() % 100 < g_cvarRocketExplodeProb.Get())
 		{
 			ClientPrintAll(HUD_PRINTTALK, " \x04[Rocket] \x03%s\x01はロケットが不発だった！", pPawn->GetOriginalController()->GetPlayerName());
 			pPawn->EmitSound(ROCKET_SURVIVEDSOUND);
 			pPawn->GetOriginalController()->GetZEPlayer()->SetRocketFallDamageIgnore(true);
 
-			new CTimer(g_flRocketExemptTime, false, false, [hPawnHandle]()
+			new CTimer(g_cvarRocketExemptTime.Get(), false, false, [hPawnHandle]()
 			{
 				CCSPlayerPawn* pPawn = hPawnHandle.Get();
 				if (!pPawn)
@@ -182,7 +175,7 @@ void Command_Rocket(CCSPlayerController* pController)
 
 CON_COMMAND_CHAT(rocket, "- a fun way to suicide")
 {
-	if (!g_bRocketMeEnabled)
+	if (!g_cvarRocketMeEnabled.Get())
 	{
 		return;
 	}
@@ -192,7 +185,7 @@ CON_COMMAND_CHAT(rocket, "- a fun way to suicide")
 
 CON_COMMAND_CHAT(rocketme, "- a fun way to suicide")
 {
-	if (!g_bRocketMeEnabled)
+	if (!g_cvarRocketMeEnabled.Get())
 	{
 		return;
 	}
